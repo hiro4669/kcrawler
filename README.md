@@ -14,5 +14,8 @@ val topUrl = URLInfo("https", "www.yahoo.co.jp", "")
 HtmlContent(topUrl).execute()
 ```
 
+## Note
+This project assumes to be used Intellij. Therefore after downloading this project `git pull`, create a new Kotlin project specifying the downloaded directory.
+
 ## Licencse
 None
