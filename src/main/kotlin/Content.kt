@@ -26,11 +26,22 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
     private val handler = object : KsoupHtmlHandler {
         override fun onOpenTag(name: String, attributes: Map<String, String>, isImplied: Boolean) {
             when (name) {
+                "source" -> {
+                    attributes["type"]?.let {_type ->
+                        if (_type == "image/webp") {
+                            attributes["srcset"]?.let { path ->
+                                val uInfo = Converter.convert(path, urlInfo)
+                                val localPath = ImageContent(uInfo).execute()
+                                replaceMap.put(adjust(path), localPath)
+                            }
+                        }
+                    }
+                }
                 "img" -> {
                     attributes["src"]?.let { path ->
                         val uInfo  = Converter.convert(path, urlInfo)
                         val localPath = ImageContent(uInfo).execute()
-                        replaceMap.put(path, localPath)
+                        replaceMap.put(adjust(path), localPath)
                     }
                 }
                 "script" -> {
@@ -39,7 +50,6 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
                         println("js = ${uInfo.getURL()}")
                         val localPath = JsContent(uInfo).execute()
                         replaceMap.put(adjust(path), localPath)
-                        //replaceMap.put(path, localPath)
                     }
                 }
                 "link" -> {
@@ -47,9 +57,8 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
                         if (relname == "stylesheet") {
                             attributes["href"]?.let { href ->
                                 val uInfo = Converter.convert(href, urlInfo)
-                                println("css path = ${uInfo.getURL()}")
-                                var localPath = CssContent(uInfo).execute()
-                                replaceMap.put(href, localPath)
+                                val localPath = CssContent(uInfo).execute()
+                                replaceMap.put(adjust(href), localPath)
                             }
                         }
                     }
@@ -76,7 +85,7 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
          */
 
         // download and parse content
-        Downloader.download(urlInfo.getURL())?.also {result ->
+        Downloader.download(urlInfo.getURL()).also { result ->
             result.first?.let {
                 this.data = it
                 val content = String(it)
@@ -91,6 +100,7 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
             //var html = String(it)
 
             val html = replaceMap.entries.fold(String(it)) { content, (key, value) ->
+                println("replace $key >> $value")
                 content.replace(key, value)
             }
             /*
@@ -104,7 +114,7 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
             }
              */
 
-            Serializer.save("index2.html", html.toByteArray(), ContentType.HTML)
+            Serializer.save(urlInfo, html.toByteArray(), ContentType.HTML)
         }?: ""
         return localPath
     }
@@ -117,7 +127,7 @@ class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
         Downloader.download((urlInfo.getURL())).also { result ->
             result.first?.let {
                 //println("result = ${result.second}")
-                localPath = Serializer.save(urlInfo.path, it, result.second) // save with extension
+                localPath = Serializer.save(urlInfo, it, result.second) // save with extension
             }
         }
         return localPath
@@ -131,7 +141,7 @@ class CssContent(val urlInfo: URLInfo) : AbstractContent() {
          var localPath = ""
          Downloader.download((urlInfo.getURL())).also { result ->
              result.first?.let {
-                 localPath = Serializer.save(urlInfo.path, it, result.second) // save with extension
+                 localPath = Serializer.save(urlInfo, it, result.second) // save with extension
              }
          }
          return localPath
@@ -145,7 +155,7 @@ class JsContent(val urlInfo: URLInfo) : Content {
         var localPath = ""
         Downloader.download((urlInfo.getURL())).also { result ->
             result.first?.let {
-                localPath = Serializer.save(urlInfo.path, it, result.second) // save with extension
+                localPath = Serializer.save(urlInfo, it, result.second) // save with extension
             }
         }
         return localPath

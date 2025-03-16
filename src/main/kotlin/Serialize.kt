@@ -8,8 +8,10 @@ import java.nio.file.Paths
 
 object Serializer {
     val basedir = "output"
+    val base: File
     init {
         println("Init Serializer")
+        base = File(basedir)
     }
 
     private fun mkdirs(path: String): String {
@@ -19,10 +21,13 @@ object Serializer {
     }
 
     fun createLocalPath(path: String, ctype: ContentType = ContentType.OTHER): String {
+        println("createLocalPath = $path")
         return mkdirs(path).let {
             //println("path = $path")
-            val fileName = path.substringAfterLast("/").let {_fname ->
-                    "$_fname${getExtension(ctype)}"
+            println("dirname = $it")
+            val fileName = path.substringAfterLast("/").let {
+                val _fname = if (it.length > 50) it.substring(0, 50) else it
+                "$_fname${getExtension(ctype)}"
             }
             //println("fileName = $fileName")
             //println("$it/$fileName")
@@ -30,13 +35,20 @@ object Serializer {
         }
     }
 
-    fun save(path: String, data: ByteArray, ctype: ContentType): String {
+    private fun save(path: String, data: ByteArray, ctype: ContentType): String {
         val ofile = File(createLocalPath(path, ctype))
         BufferedOutputStream(FileOutputStream(ofile)).use {
             it.write(data)
             it.flush()
         }
+        //println("relativePath = ${ofile.toRelativeString(base)}")
         return ofile.absolutePath
+    }
+
+    fun save(urlInfo: URLInfo, data: ByteArray, ctype: ContentType): String {
+        urlInfo.apply {if (path == "") path = "index.html" }
+        return save(urlInfo.domain + "/" + urlInfo.path, data, ctype)
+        //return save(urlInfo.path, data, ctype)
     }
 
     private fun getExtension(ctype: ContentType): String {
@@ -46,6 +58,7 @@ object Serializer {
             ContentType.CSS -> ".css"
             ContentType.JS -> ".js"
             ContentType.PNG -> ".png"
+            ContentType.WEBP -> ".webp"
             else -> ""
         }
     }
