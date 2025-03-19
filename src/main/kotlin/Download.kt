@@ -48,7 +48,7 @@ object Downloader {
             ctype = contentType
         }.getInputStream()
 
-        println("contentType = $ctype")
+        //println("contentType = $ctype")
         val rawContents = inStream?.let {
             val bout = ByteArrayOutputStream()
             while (true) {

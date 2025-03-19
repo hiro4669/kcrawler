@@ -17,10 +17,17 @@ abstract class AbstractContent : Content {
     }
 }
 
-class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
+class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
 
     private var data: ByteArray? = null
     private val replaceMap = mutableMapOf<String, String>()
+    private val stack = mutableListOf<Pair<URLInfo, Int>>()
+
+    private var level = 0
+
+    constructor(urlInfo: URLInfo, level: Int): this(urlInfo) {
+        stack.addLast(urlInfo to level)
+    }
 
 
     private val handler = object : KsoupHtmlHandler {
@@ -47,7 +54,6 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
                 "script" -> {
                     attributes["src"]?.let { path ->
                         val uInfo  = Converter.convert(path, urlInfo)
-                        println("js = ${uInfo.getURL()}")
                         val localPath = JsContent(uInfo).execute()
                         replaceMap.put(adjust(path), localPath)
                     }
@@ -71,6 +77,11 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
     private val parser: KsoupHtmlParser = KsoupHtmlParser(handler = this.handler)
 
     override fun execute(): String {
+        if (stack.size == 0) return ""
+        stack.removeLast().apply {
+            urlInfo = first
+            level = second
+        }
         println("url = ${urlInfo.getURL()}")
 
         // load from file and parse content
@@ -100,20 +111,8 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
             //var html = String(it)
 
             val html = replaceMap.entries.fold(String(it)) { content, (key, value) ->
-                println("replace $key >> $value")
                 content.replace(key, value)
             }
-            /*
-            replaceMap.forEach { key, value ->
-                if (html.contains(key)) {
-                    println("replacable: $key")
-                } else {
-                    println("cannot find: $key")
-                }
-                html = html.replace(key, value)
-            }
-             */
-
             Serializer.save(urlInfo, html.toByteArray(), ContentType.HTML)
         }?: ""
         return localPath
@@ -121,7 +120,7 @@ class HtmlContent(val urlInfo: URLInfo) : AbstractContent() {
 }
 class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
     override fun execute(): String {
-        println("Download Image: ${urlInfo.getURL()} ...")
+        //println("Download Image: ${urlInfo.getURL()} ...")
 
         var localPath = ""
         Downloader.download((urlInfo.getURL())).also { result ->
@@ -136,7 +135,7 @@ class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
 
 class CssContent(val urlInfo: URLInfo) : AbstractContent() {
      override fun execute(): String {
-         println("Download CSS: ${urlInfo.getURL()} ...")
+         //println("Download CSS: ${urlInfo.getURL()} ...")
 
          var localPath = ""
          Downloader.download((urlInfo.getURL())).also { result ->
@@ -150,7 +149,7 @@ class CssContent(val urlInfo: URLInfo) : AbstractContent() {
 
 class JsContent(val urlInfo: URLInfo) : Content {
     override fun execute(): String {
-        println("Download JS: ${urlInfo.getURL()} ...")
+        //println("Download JS: ${urlInfo.getURL()} ...")
 
         var localPath = ""
         Downloader.download((urlInfo.getURL())).also { result ->

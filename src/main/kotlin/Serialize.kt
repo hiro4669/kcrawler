@@ -21,10 +21,7 @@ object Serializer {
     }
 
     fun createLocalPath(path: String, ctype: ContentType = ContentType.OTHER): String {
-        println("createLocalPath = $path")
         return mkdirs(path).let {
-            //println("path = $path")
-            println("dirname = $it")
             val fileName = path.substringAfterLast("/").let {
                 val _fname = if (it.length > 50) it.substring(0, 50) else it
                 "$_fname${getExtension(ctype)}"
