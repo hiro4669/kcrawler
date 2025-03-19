@@ -50,6 +50,16 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                         val localPath = ImageContent(uInfo).execute()
                         replaceMap.put(adjust(path), localPath)
                     }
+                    attributes["srcset"]?.let {paths ->
+                        //println("srcset = $paths")
+                        paths.split(",").forEach{ path ->
+                            val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
+                            //println(uInfo.getURL())
+                            val localPath = ImageContent(uInfo).execute()
+                            //println(localPath)
+                            replaceMap.put(adjust(path), localPath)
+                        }
+                    }
                 }
                 "script" -> {
                     attributes["src"]?.let { path ->
@@ -65,6 +75,18 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                                 val uInfo = Converter.convert(href, urlInfo)
                                 val localPath = CssContent(uInfo).execute()
                                 replaceMap.put(adjust(href), localPath)
+                            }
+                        }
+                    }
+                }
+                "a" -> {
+                    if (level > 0) {
+                        attributes["href"]?.let { path ->
+                            if (!path.startsWith("#")) {
+                                val uInfo = Converter.convert(path, urlInfo)
+                                uInfo.getURL().let {
+                                    println("a href = $it")
+                                }
                             }
                         }
                     }

@@ -12,6 +12,7 @@ enum class ContentType {
     CSS,
     JS,
     WEBP,
+    SVG,
     OTHER
 }
 
@@ -28,9 +29,13 @@ object Downloader {
             "image/png" -> ContentType.PNG
             "text/html" -> ContentType.HTML
             "text/html; charset=UTF-8" -> ContentType.HTML
+            "text/html; charset=utf-8" -> ContentType.HTML
             "text/css" -> ContentType.CSS
+            "text/css; charset=UTF-8" -> ContentType.CSS
             "application/javascript" -> ContentType.JS
+            "application/javascript; charset=UTF-8" -> ContentType.JS
             "text/javascript" -> ContentType.JS
+            "image/svg+xml" -> ContentType.SVG
             "image/webp" -> ContentType.WEBP
             else -> {
                 throw RuntimeException("unknown type $ctype")

@@ -54,6 +54,8 @@ object Converter {
             protocol = parentUrl.protocol
             domain = parentUrl.domain
             path = getAbsoluatePath(parentUrl.path, url)
+        } else {
+            println("what else? $url")
         }
         return URLInfo(protocol, domain, path)
     }

@@ -7,7 +7,11 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 object Serializer {
+    val MAX_LEN = 50
     val basedir = "output"
+    val banlist = listOf("&", "?")
+
+
     val base: File
     init {
         println("Init Serializer")
@@ -20,14 +24,19 @@ object Serializer {
         return dirName
     }
 
+    private fun rename(oname: String) =
+        banlist.fold(oname) {name, bchar -> name.replace(bchar, "")}
+
     fun createLocalPath(path: String, ctype: ContentType = ContentType.OTHER): String {
         return mkdirs(path).let {
             val fileName = path.substringAfterLast("/").let {
-                val _fname = if (it.length > 50) it.substring(0, 50) else it
-                "$_fname${getExtension(ctype)}"
+                //val _fname = if (it.length > MAX_LEN) it.substring(0, MAX_LEN) else it
+                val _fname = if (it.length > MAX_LEN) it.substring(it.length - MAX_LEN) else it
+                //println("fname  = $_fname")
+                //println("rename = ${rename(_fname)}")
+                "${rename(_fname)}${getExtension(ctype)}"
+
             }
-            //println("fileName = $fileName")
-            //println("$it/$fileName")
             "$it/$fileName"
         }
     }
@@ -56,6 +65,7 @@ object Serializer {
             ContentType.JS -> ".js"
             ContentType.PNG -> ".png"
             ContentType.WEBP -> ".webp"
+            ContentType.SVG -> ".svg"
             else -> ""
         }
     }
