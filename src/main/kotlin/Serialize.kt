@@ -52,9 +52,15 @@ object Serializer {
     }
 
     fun save(urlInfo: URLInfo, data: ByteArray, ctype: ContentType): String {
-        urlInfo.apply {if (path == "") path = "index.html" }
+        //urlInfo.apply {if (path == "") path = "index.html" }
+
+        urlInfo.apply {
+            if (path == "") path = "index"
+            else if (path.endsWith("/")) path += "index"
+        }
+
+
         return save(urlInfo.domain + "/" + urlInfo.path, data, ctype)
-        //return save(urlInfo.path, data, ctype)
     }
 
     private fun getExtension(ctype: ContentType): String {

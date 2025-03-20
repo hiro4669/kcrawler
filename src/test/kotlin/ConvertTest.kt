@@ -15,4 +15,12 @@ class ConvertTest {
         assertEquals("https://www.yahoo.co.jp/relative.html", urlInfo.getURL())
     }
 
+    @Test
+    fun TestCase02() {
+        val url = "https://www.lycorp.co.jp/ja/company/athletes/"
+        val urlInfo = Converter.convert(url, rootURL)
+        println(urlInfo.path)
+        assertEquals("https://www.lycorp.co.jp/ja/company/athletes/", urlInfo.getURL())
+    }
+
 }
