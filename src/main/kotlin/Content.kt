@@ -53,11 +53,11 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                     attributes["srcset"]?.let {paths ->
                         //println("srcset = $paths")
                         paths.split(",").forEach{ path ->
-                            val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
-                            //println(uInfo.getURL())
+                            //val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
+                            val oldPath = path.trim().split(" ")[0]
+                            val uInfo = Converter.convert(oldPath, urlInfo)
                             val localPath = ImageContent(uInfo).execute()
-                            //println(localPath)
-                            replaceMap.put(adjust(path), localPath)
+                            replaceMap.put(adjust(oldPath), localPath)
                         }
                     }
                 }

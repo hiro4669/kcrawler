@@ -9,7 +9,7 @@ import java.nio.file.Paths
 object Serializer {
     val MAX_LEN = 50
     val basedir = "output"
-    val banlist = listOf("&", "?")
+    val banlist = listOf("&", "?", "%")
 
 
     val base: File
