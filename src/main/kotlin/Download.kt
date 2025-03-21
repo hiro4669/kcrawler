@@ -30,6 +30,7 @@ object Downloader {
             "text/html" -> ContentType.HTML
             "text/html; charset=UTF-8" -> ContentType.HTML
             "text/html; charset=utf-8" -> ContentType.HTML
+            "text/html;charset=UTF-8" -> ContentType.HTML
             "text/css" -> ContentType.CSS
             "text/css; charset=UTF-8" -> ContentType.CSS
             "application/javascript" -> ContentType.JS

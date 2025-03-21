@@ -2,7 +2,7 @@ package fd
 
 class URLInfo(val protocol: String, val domain: String, var path: String) {
     fun getURL(): String {
-        return "$protocol://$domain/$path"
+        return "$protocol://$domain/$path".trim()
     }
 }
 
