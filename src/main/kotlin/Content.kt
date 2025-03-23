@@ -26,7 +26,7 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
     private var level = 0
 
     constructor(urlInfo: URLInfo, level: Int): this(urlInfo) {
-        stack.addLast(urlInfo to level)
+        this.level = level
     }
 
 
@@ -37,44 +37,57 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                     attributes["type"]?.let {_type ->
                         if (_type == "image/webp") {
                             attributes["srcset"]?.let { path ->
-                                val uInfo = Converter.convert(path, urlInfo)
-                                val localPath = ImageContent(uInfo).execute()
-                                replaceMap.put(adjust(path), localPath)
+                                if (path.trim() != "") {
+                                    val uInfo = Converter.convert(path, urlInfo)
+                                    val localPath = ImageContent(uInfo).execute()
+                                    replaceMap.put(adjust(path), localPath)
+                                }
                             }
                         }
                     }
                 }
                 "img" -> {
                     attributes["src"]?.let { path ->
-                        val uInfo  = Converter.convert(path, urlInfo)
-                        val localPath = ImageContent(uInfo).execute()
-                        replaceMap.put(adjust(path), localPath)
+                        if (path.trim() != "") {
+                            val uInfo = Converter.convert(path, urlInfo)
+                            val localPath = ImageContent(uInfo).execute()
+                            replaceMap.put(adjust(path), localPath)
+                        }
                     }
                     attributes["srcset"]?.let {paths ->
                         //println("srcset = $paths")
-                        paths.split(",").forEach{ path ->
-                            //val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
-                            val oldPath = path.trim().split(" ")[0]
-                            val uInfo = Converter.convert(oldPath, urlInfo)
-                            val localPath = ImageContent(uInfo).execute()
-                            replaceMap.put(adjust(oldPath), localPath)
+                        if (paths.trim() != "") {
+                            paths.split(",").forEach { path ->
+                                //val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
+                                val oldPath = path.trim().split(" ")[0]
+                                val uInfo = Converter.convert(oldPath, urlInfo)
+                                val localPath = ImageContent(uInfo).execute()
+                                replaceMap.put(adjust(oldPath), localPath)
+                            }
                         }
                     }
                 }
                 "script" -> {
                     attributes["src"]?.let { path ->
-                        val uInfo  = Converter.convert(path, urlInfo)
-                        val localPath = JsContent(uInfo).execute()
-                        replaceMap.put(adjust(path), localPath)
+                        //println("script = $path")
+                        if (path.trim() != "") {
+                            val uInfo = Converter.convert(path, urlInfo)
+                            val localPath = JsContent(uInfo).execute()
+                            replaceMap.put(path, localPath) // for uncontrollable descriptions of authors
+                            replaceMap.put(adjust(path), localPath)
+                        }
                     }
                 }
                 "link" -> {
                     attributes["rel"]?.let { relname ->
                         if (relname == "stylesheet") {
                             attributes["href"]?.let { href ->
-                                val uInfo = Converter.convert(href, urlInfo)
-                                val localPath = CssContent(uInfo).execute()
-                                replaceMap.put(adjust(href), localPath)
+                                //println("css = $href")
+                                if (href.trim() != "") {
+                                    val uInfo = Converter.convert(href, urlInfo)
+                                    val localPath = CssContent(uInfo).execute()
+                                    replaceMap.put(adjust(href), localPath)
+                                }
                             }
                         }
                     }
@@ -82,11 +95,11 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                 "a" -> {
                     if (level > 0) {
                         attributes["href"]?.let { path ->
-                            if (!path.startsWith("#")) {
+                            //println("a $path")
+                            if (!path.startsWith("#") && path.trim() != "") {
                                 val uInfo = Converter.convert(path, urlInfo)
-                                uInfo.getURL().let {
-                                    println("a href = $it")
-                                }
+                                val localPath = HtmlContent(uInfo, level-1).execute()
+                                replaceMap[adjust(path)] = localPath
                             }
                         }
                     }
@@ -99,12 +112,14 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
     private val parser: KsoupHtmlParser = KsoupHtmlParser(handler = this.handler)
 
     override fun execute(): String {
+        /*
         if (stack.size == 0) return ""
         stack.removeLast().apply {
             urlInfo = first
             level = second
         }
-        println("url = ${urlInfo.getURL()}")
+         */
+        println("url = ${urlInfo.getURL()}, level = ${level}")
 
         // load from file and parse content
         /*
@@ -127,7 +142,6 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
             }
         }
 
-
         // save data
         val localPath = this.data?.let {
             //var html = String(it)
@@ -137,12 +151,15 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
             }
             Serializer.save(urlInfo, html.toByteArray(), ContentType.HTML)
         }?: ""
+
         return localPath
     }
 }
 class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
     override fun execute(): String {
         //println("Download Image: ${urlInfo.getURL()} ...")
+        /* embedded data */
+        if (urlInfo.embed) return urlInfo.path
 
         var localPath = ""
         Downloader.download((urlInfo.getURL())).also { result ->

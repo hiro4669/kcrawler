@@ -8,6 +8,7 @@ import java.nio.file.Paths
 
 object Serializer {
     val MAX_LEN = 50
+    val MAX_DIR_LEN = 100
     val basedir = "output"
     val banlist = listOf("&", "?", "%")
 
@@ -19,7 +20,10 @@ object Serializer {
     }
 
     private fun mkdirs(path: String): String {
-        val dirName = "$basedir/${path.substringBeforeLast("/")}"
+        var dirName = rename("$basedir/${path.substringBeforeLast("/")}")
+        //println("dirName1 = $dirName")
+        if (dirName.length > MAX_DIR_LEN) dirName = dirName.substring(0, MAX_DIR_LEN)
+        //println("dirName2 = $dirName")
         Files.createDirectories(Paths.get(dirName))
         return dirName
     }
@@ -72,6 +76,10 @@ object Serializer {
             ContentType.PNG -> ".png"
             ContentType.WEBP -> ".webp"
             ContentType.SVG -> ".svg"
+            ContentType.GIF -> ".gif"
+            ContentType.JSON -> ".json"
+            ContentType.PLAIN -> ".txt"
+            ContentType.BINARY -> ""
             else -> ""
         }
     }

@@ -1,6 +1,7 @@
 package fd
 
 class URLInfo(val protocol: String, val domain: String, var path: String) {
+    var embed = false
     fun getURL(): String {
         return "$protocol://$domain/$path".trim()
     }
@@ -34,6 +35,7 @@ object Converter {
         lateinit var protocol: String
         lateinit var domain: String
         lateinit var path: String
+        var _embed = false
 
         if (url.startsWith("http")) {
             val elements = url.split("://")
@@ -54,9 +56,15 @@ object Converter {
             protocol = parentUrl.protocol
             domain = parentUrl.domain
             path = getAbsoluatePath(parentUrl.path, url)
+        } else if (url.startsWith("data:image")) {
+            protocol = parentUrl.protocol
+            domain = parentUrl.domain
+            path = url
+            _embed = true
         } else {
-            println("what else? $url")
+            println("what else? url = $url")
         }
-        return URLInfo(protocol, domain, path)
+
+        return URLInfo(protocol, domain, path).apply { embed = _embed }
     }
 }
