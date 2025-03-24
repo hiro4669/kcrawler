@@ -2,7 +2,7 @@ package fd
 
 fun main() {
     println("Welcome to KCrawler")
-    val topUrl = URLInfo("https", "www.yahoo.co.jp", "")
+    //val topUrl = URLInfo("https", "www.yahoo.co.jp", "", "https://www.yahoo.co.jp/")
 
     //https://kids.yahoo.co.jp/
     //val topUrl = URLInfo("https", "kids.yahoo.co.jp", "")
@@ -44,5 +44,7 @@ fun main() {
     // https://www.paypay-corp.co.jp/store/campaign/
     // val topUrl = URLInfo("https", "www.paypay-corp.co.jp", "store/campaign/")
 
-    HtmlContent(topUrl, 1).execute()
+    // https://ebookjapan.yahoo.co.jp/theme/content/55388/
+     val topUrl = URLInfo("https", "ebookjapan.yahoo.co.jp", "theme/content/55388/", "https://ebookjapan.yahoo.co.jp/theme/content/55388/")
+    HtmlContent(topUrl, 0).execute()
 }

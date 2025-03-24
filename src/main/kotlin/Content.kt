@@ -5,19 +5,23 @@ import com.mohamedrejeb.ksoup.html.parser.KsoupHtmlParser
 
 interface Content {
     fun execute(): String
+    fun getOriginalUrl(): String
 }
 
-abstract class AbstractContent : Content {
+abstract class AbstractContent(open val urlInfo: URLInfo) : Content {
     val rmap: Map<String, String> = mapOf("&" to "&amp;")
+    val contentsList = mutableListOf<Content>()
 
-    public fun adjust(oUrl: String): String {
+    fun adjust(oUrl: String): String {
         return rmap.entries.fold(oUrl) { url, (key, value) ->
             url.replace(key, value)
         }
     }
+    override fun getOriginalUrl(): String = urlInfo.ourl
+
 }
 
-class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
+class HtmlContent(override val urlInfo: URLInfo) : AbstractContent(urlInfo) {
 
     private var data: ByteArray? = null
     private val replaceMap = mutableMapOf<String, String>()
@@ -39,8 +43,9 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                             attributes["srcset"]?.let { path ->
                                 if (path.trim() != "") {
                                     val uInfo = Converter.convert(path, urlInfo)
-                                    val localPath = ImageContent(uInfo).execute()
-                                    replaceMap.put(adjust(path), localPath)
+                                    contentsList.addLast(ImageContent(uInfo))
+                                    //val localPath = ImageContent(uInfo).execute()
+                                    //replaceMap.put(adjust(path), localPath)
                                 }
                             }
                         }
@@ -50,19 +55,21 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                     attributes["src"]?.let { path ->
                         if (path.trim() != "") {
                             val uInfo = Converter.convert(path, urlInfo)
-                            val localPath = ImageContent(uInfo).execute()
-                            replaceMap.put(adjust(path), localPath)
+                            contentsList.addLast(ImageContent(uInfo))
+                            //val localPath = ImageContent(uInfo).execute()
+                            //replaceMap.put(adjust(path), localPath)
                         }
                     }
                     attributes["srcset"]?.let {paths ->
                         //println("srcset = $paths")
-                        if (paths.trim() != "") {
+                        if (paths.trim() != "" && !paths.startsWith("data:image")) {
                             paths.split(",").forEach { path ->
                                 //val uInfo =  path.trim().split(" ")[0].let { Converter.convert(it, urlInfo) }
                                 val oldPath = path.trim().split(" ")[0]
                                 val uInfo = Converter.convert(oldPath, urlInfo)
-                                val localPath = ImageContent(uInfo).execute()
-                                replaceMap.put(adjust(oldPath), localPath)
+                                contentsList.addLast(ImageContent(uInfo))
+                                //val localPath = ImageContent(uInfo).execute()
+                                //replaceMap.put(adjust(oldPath), localPath)
                             }
                         }
                     }
@@ -72,9 +79,10 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                         //println("script = $path")
                         if (path.trim() != "") {
                             val uInfo = Converter.convert(path, urlInfo)
-                            val localPath = JsContent(uInfo).execute()
-                            replaceMap.put(path, localPath) // for uncontrollable descriptions of authors
-                            replaceMap.put(adjust(path), localPath)
+                            contentsList.addLast(JsContent(uInfo))
+                            //val localPath = JsContent(uInfo).execute()
+                            //replaceMap.put(path, localPath) // for uncontrollable descriptions of authors
+                            //replaceMap.put(adjust(path), localPath)
                         }
                     }
                 }
@@ -85,8 +93,9 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                                 //println("css = $href")
                                 if (href.trim() != "") {
                                     val uInfo = Converter.convert(href, urlInfo)
-                                    val localPath = CssContent(uInfo).execute()
-                                    replaceMap.put(adjust(href), localPath)
+                                    contentsList.addLast((CssContent(uInfo)))
+                                    //val localPath = CssContent(uInfo).execute()
+                                    //replaceMap.put(adjust(href), localPath)
                                 }
                             }
                         }
@@ -98,8 +107,9 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                             //println("a $path")
                             if (!path.startsWith("#") && path.trim() != "") {
                                 val uInfo = Converter.convert(path, urlInfo)
-                                val localPath = HtmlContent(uInfo, level-1).execute()
-                                replaceMap[adjust(path)] = localPath
+                                contentsList.addLast(HtmlContent(uInfo, level-1))
+                                //val localPath = HtmlContent(uInfo, level-1).execute()
+                                //replaceMap[adjust(path)] = localPath
                             }
                         }
                     }
@@ -111,28 +121,11 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
 
     private val parser: KsoupHtmlParser = KsoupHtmlParser(handler = this.handler)
 
+
     override fun execute(): String {
-        /*
-        if (stack.size == 0) return ""
-        stack.removeLast().apply {
-            urlInfo = first
-            level = second
-        }
-         */
         println("url = ${urlInfo.getURL()}, level = ${level}")
 
-        // load from file and parse content
-        /*
-        Downloader.downloadf("index.html")?.let {
-            this.data = it          // keep content a variable
-            val content = String(it)
-            parser.write(content)
-            parser.end()
-        }
-
-         */
-
-        // download and parse content
+        // download and parse content using HTML parser
         Downloader.download(urlInfo.getURL()).also { result ->
             result.first?.let {
                 this.data = it
@@ -141,6 +134,9 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
                 parser.end()
             }
         }
+
+        // execute downloading other data
+        contentsList.forEach { content ->  replaceMap[adjust(content.getOriginalUrl())] = content.execute() }
 
         // save data
         val localPath = this.data?.let {
@@ -155,7 +151,7 @@ class HtmlContent(var urlInfo: URLInfo) : AbstractContent() {
         return localPath
     }
 }
-class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
+class ImageContent(override val urlInfo: URLInfo) : AbstractContent(urlInfo) {
     override fun execute(): String {
         //println("Download Image: ${urlInfo.getURL()} ...")
         /* embedded data */
@@ -172,7 +168,7 @@ class ImageContent(val urlInfo: URLInfo) : AbstractContent() {
     }
 }
 
-class CssContent(val urlInfo: URLInfo) : AbstractContent() {
+class CssContent(override val urlInfo: URLInfo) : AbstractContent(urlInfo) {
      override fun execute(): String {
          //println("Download CSS: ${urlInfo.getURL()} ...")
 
@@ -186,7 +182,7 @@ class CssContent(val urlInfo: URLInfo) : AbstractContent() {
      }
  }
 
-class JsContent(val urlInfo: URLInfo) : Content {
+class JsContent(override val urlInfo: URLInfo) : AbstractContent(urlInfo) {
     override fun execute(): String {
         //println("Download JS: ${urlInfo.getURL()} ...")
 

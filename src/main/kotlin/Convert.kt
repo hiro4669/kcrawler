@@ -1,6 +1,6 @@
 package fd
 
-class URLInfo(val protocol: String, val domain: String, var path: String) {
+class URLInfo(val protocol: String, val domain: String, var path: String, val ourl: String) {
     var embed = false
     fun getURL(): String {
         return "$protocol://$domain/$path".trim()
@@ -65,6 +65,6 @@ object Converter {
             println("what else? url = $url")
         }
 
-        return URLInfo(protocol, domain, path).apply { embed = _embed }
+        return URLInfo(protocol, domain, path, url).apply { embed = _embed }
     }
 }
